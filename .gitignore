@@ -1,0 +1,19 @@
+# Gradle
+.gradle/
+build/
+*/build/
+
+# Android
+local.properties
+.idea/
+captures/
+.externalNativeBuild/
+.cxx/
+
+# OS / editor
+*.iml
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
