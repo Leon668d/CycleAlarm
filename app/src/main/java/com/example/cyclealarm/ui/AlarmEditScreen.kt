@@ -12,13 +12,17 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -33,10 +37,12 @@ import com.example.cyclealarm.model.AnchorMode
 import com.example.cyclealarm.model.CycleUnit
 import com.example.cyclealarm.model.LoopAlarm
 import com.example.cyclealarm.model.LoopAlarmInput
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneOffset
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun AlarmEditScreen(
     alarm: LoopAlarm?,
@@ -52,6 +58,35 @@ fun AlarmEditScreen(
     var reminderTime by remember(alarm?.id) { mutableStateOf(alarm?.reminderTime ?: "09:00") }
     var enabled by remember(alarm?.id) { mutableStateOf(alarm?.enabled ?: true) }
     var error by remember { mutableStateOf<String?>(null) }
+    var showDatePicker by remember { mutableStateOf(false) }
+    val datePickerState = rememberDatePickerState(
+        initialSelectedDateMillis = startDate.toEpochMillisOrToday()
+    )
+
+    if (showDatePicker) {
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        datePickerState.selectedDateMillis?.let {
+                            startDate = millisToLocalDate(it).toString()
+                        }
+                        showDatePicker = false
+                    }
+                ) {
+                    Text("确定")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) {
+                    Text("取消")
+                }
+            }
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 
     Scaffold { paddingValues ->
         Column(
@@ -120,13 +155,22 @@ fun AlarmEditScreen(
                 }
             }
 
-            OutlinedTextField(
-                value = startDate,
-                onValueChange = { startDate = it },
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                label = { Text("开始日期，格式 2026-06-28") },
-                singleLine = true
-            )
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = startDate,
+                    onValueChange = { startDate = it },
+                    modifier = Modifier.weight(1f),
+                    label = { Text("开始日期") },
+                    singleLine = true
+                )
+                Button(onClick = { showDatePicker = true }) {
+                    Text("选择")
+                }
+            }
             OutlinedTextField(
                 value = reminderTime,
                 onValueChange = { reminderTime = it },
@@ -212,4 +256,17 @@ private fun validateInput(
             enabled = enabled
         )
     }.getOrNull()
+}
+
+private fun String.toEpochMillisOrToday(): Long {
+    return runCatching { LocalDate.parse(this).toEpochMillis() }
+        .getOrElse { LocalDate.now().toEpochMillis() }
+}
+
+private fun LocalDate.toEpochMillis(): Long {
+    return atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+}
+
+private fun millisToLocalDate(millis: Long): LocalDate {
+    return Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
 }

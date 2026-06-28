@@ -2,6 +2,7 @@ package com.example.cyclealarm.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -188,7 +189,7 @@ private fun MissingAlarm(onBack: () -> Unit) {
 }
 
 @Composable
-private fun InfoCard(content: @Composable Column.() -> Unit) {
+private fun InfoCard(content: @Composable ColumnScope.() -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)

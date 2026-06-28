@@ -5,13 +5,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -22,6 +21,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -60,18 +63,12 @@ fun HomeScreen(
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold
                     )
-                    Text(text = "周期闹钟", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "${alarms.count { it.enabled }} 个启用任务", style = MaterialTheme.typography.bodyMedium)
                 }
                 Button(onClick = onAdd) {
                     Text("新增")
                 }
             }
-
-            Text(
-                text = "本 App 不会长期在后台运行。长周期提醒建议添加到系统日历；当天或近期响铃可使用系统闹钟。",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
 
             if (alarms.isEmpty()) {
                 EmptyState(onAdd = onAdd, onCreateTemplate = onCreateTemplate)
@@ -138,6 +135,33 @@ private fun AlarmCard(
     onCalendar: () -> Unit,
     onAlarm: () -> Unit
 ) {
+    var showDisableDialog by remember { mutableStateOf(false) }
+
+    if (showDisableDialog) {
+        AlertDialog(
+            onDismissRequest = { showDisableDialog = false },
+            title = { Text("停用这个任务？") },
+            text = {
+                Text("停用只会影响 App 内的任务状态，不会删除或修改你已经添加到系统日历、系统闹钟里的提醒。")
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showDisableDialog = false
+                        onToggleEnabled()
+                    }
+                ) {
+                    Text("停用")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDisableDialog = false }) {
+                    Text("取消")
+                }
+            }
+        )
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
@@ -153,19 +177,21 @@ private fun AlarmCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(alarm.title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.SemiBold)
-                    Spacer(modifier = Modifier.height(2.dp))
                     Text(
                         alarm.remainingText(),
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
                         color = if (alarm.enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                TextButton(onClick = onToggleEnabled) {
+                TextButton(onClick = { if (alarm.enabled) showDisableDialog = true else onToggleEnabled() }) {
                     Text(if (alarm.enabled) "停用" else "启用")
                 }
             }
-            Text("下次到期：${alarm.nextDueDate} ${alarm.reminderTime}")
-            Text(alarm.cycleLabel(), color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                text = "${alarm.nextDueDate} ${alarm.reminderTime} · 每 ${alarm.cycleValue} ${alarm.cycleUnit.label()}",
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (alarm.enabled) {
                     Button(onClick = onComplete) { Text("完成") }

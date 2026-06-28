@@ -71,6 +71,11 @@ class LoopAlarmViewModel(application: Application) : AndroidViewModel(applicatio
     fun setEnabled(id: Long, enabled: Boolean) {
         repository.setEnabled(id, enabled)
         refresh()
+        if (enabled) {
+            showMessage("已启用任务")
+        } else {
+            showMessage("已停用 App 内任务。系统日历或闹钟提醒需要手动检查。")
+        }
     }
 
     fun clearMessage() {
